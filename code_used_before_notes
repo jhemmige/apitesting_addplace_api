@@ -1,0 +1,251 @@
+This code was used before. For some reason, Json response wsa not parsing so created a new steps. Current steps exactly matches rahul's course code
+
+import static io.restassured.RestAssured.given;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
+import io.cucumber.java.en.*;
+import io.restassured.RestAssured;
+import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.http.ContentType;
+import io.restassured.http.Method;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.ResponseSpecification;
+import junit.framework.Assert;
+import resources.ResourceAPIs;
+import resources.TestDataResource;
+import resources.Utils_BaseURI;
+
+public class Steps extends Utils_BaseURI {
+
+	RequestSpecification requestspec;
+	ResponseSpecification Respspec;
+	Response response;
+	JsonPath jp;
+	TestDataResource tdr = new TestDataResource();
+	ResourceAPIs resapi;
+	static String placeID;
+
+	@Given("I have the baseURI with the payload containing the place to be added using AddPlaceAPI that has {string} {string} {string} {string}")
+	public void i_have_the_base_uri_with_the_payload_containing_the_place_to_be_added_using_add_place_api_that_has(
+			String name, String language, String Phone_number, String address) throws IOException {
+
+		requestspec = RestAssured.given().log().all().spec(RequestSpecification())
+				.body(tdr.getTestData(name, address, language));
+
+	}
+	
+	@When("user calls {string} with {string} http request")
+	public void user_calls_with_http_request(String resource, String httpmethod) {
+		
+		Respspec = new ResponseSpecBuilder().expectContentType(ContentType.JSON).build();
+		resapi = ResourceAPIs.valueOf(resource);
+		System.out.println(resapi.getresourceApi());
+
+		if (httpmethod.equalsIgnoreCase("POST")) {
+
+			response = requestspec.request(Method.POST, resapi.getresourceApi()).then().spec(Respspec).extract()
+					.response();
+
+		} else if
+
+		(httpmethod.equalsIgnoreCase("GET")) {
+
+			response = requestspec.request(Method.GET, resapi.getresourceApi()).then().spec(Respspec).extract()
+					.response();
+
+		}
+	   
+	}
+
+
+	@SuppressWarnings("deprecation")
+	@Then("The place should get added successfully with the response lines with status code {int}")
+	public void the_place_should_get_added_successfully_with_the_response_lines_with_status_code(Integer int1) {
+
+		int scode = response.getStatusCode();
+		Assert.assertEquals(scode, 200);
+
+	}
+
+	@Then("Response {string} in the  Response body should be {string}")
+	public void response_in_the_response_body_should_be(String key, String keyvalue) {
+
+		String resbody = response.getBody().asString();
+
+		//System.out.println("THIS IS RESPONSEBODY" + resbody);
+
+		long time = response.getTimeIn(TimeUnit.MILLISECONDS);
+		// jp= new JsonPath(resbody);
+		System.out.println(time);
+		System.out.println("YOLO STATUS" + getJsonPath(response, "status"));
+		String status = getJsonPath(response, "status");
+
+		System.out.println("This is the value of " + status);
+		Assert.assertEquals(status, keyvalue);
+	}
+
+	@Then("Response {string} in the Response body should be {string}")
+	public void response_in_the_response_body_should_be1(String key, String keyvalue) {
+		String resbody = response.getBody().asString();
+
+		// String resbody= response.getBody().asString();
+		String scope = (getJsonPath(response, "scope"));
+
+		System.out.println("This si the value of " + scope);
+		Assert.assertEquals(scope, keyvalue);
+
+	}
+
+	@Then("Verify if placeID maps to {string} given using {string}")
+	public void verify_if_place_id_maps_to_given_using(String expectedName, String resource) throws IOException {
+
+		placeID = (getJsonPath(response, "place_id"));
+		System.out.println("this is the placID" + placeID);
+
+		requestspec = given().log().all().spec(RequestSpecification()).queryParam("place_id", placeID);
+
+		user_calls_with_http_request(resource, "GET");
+
+		String actualName = getJsonPath(response, "name");
+		System.out.println("ActualName: " + actualName);
+		String location = getJsonPath(response, "location.longitude");
+		System.out.println("LONGITUDE: " + location);
+
+
+	//String[] l1=	location.split(",");
+	//System.out.println("lalala"+ l1[0]);
+
+	}
+	
+	@Given("I have the DeletePlaceAPI payload")
+	public void i_have_the_delete_place_api_payload( ) throws IOException {
+		requestspec = given().log().all().spec(RequestSpecification()).body(getDeleteAPI(placeID));
+		//user_calls_with_http_request(resource, "POST");
+		System.out.println(placeID);
+	   
+	}
+	
+	@Then("The place should get deleted successfully with the response lines with status code {int}")
+	public void the_place_should_get_deleted_successfully_with_the_response_lines_with_status_code(Integer int1) {
+	    
+		int stcode=response.getStatusCode();
+		
+		System.out.println("I have converted response to string"+ response.asString());
+	    
+	    Assert.assertEquals(stcode, 200);
+	    System.out.println("YIPEE");
+	    
+	}
+
+
+FROM RAHUL SHETTYS COURSE
+
+
+import static io.restassured.RestAssured.given;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import static org.junit.Assert.*;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.http.ContentType;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.ResponseSpecification;
+
+import resources.ResourceAPIs;
+import resources.TestDataResource;
+import resources.Utils_BaseURI;
+
+public class Steps extends Utils_BaseURI {
+	RequestSpecification res;
+	ResponseSpecification resspec;
+	Response response;
+	TestDataResource data = new TestDataResource();
+	static String place_id;
+	/**Eg: 	in DeletePlace, we have to use Place_ID, if we just used String Place_ID, 
+	 * and run the testcase, it’ll throw, null point exception as below. This is because, placeID doesnot 
+	 * hold any value anymore. So, if we are referencing place_ID variable in the new testcase, static keyword 
+	 * should be should so that the place_ID value from previous testcase remains intact.
+ */
+	ResourceAPIs resourceAPI;
+
+	@Given("Add Place Payload with {string}  {string} {string}")
+	public void add_Place_Payload_with(String name, String language, String address) throws IOException {
+		
+		res = given().spec(RequestSpecification()).body(data.getTestData(name, language, address));
+	}
+
+	@When("user calls {string} with {string} http request")
+	public void user_calls_with_http_request(String resource, String method) {
+		    // Write code here that turns the phrase above into concrete actions
+	//constructor will be called with value of resource which you pass
+		resourceAPI=ResourceAPIs.valueOf(resource);
+			System.out.println(resourceAPI.getresourceApi());
+			
+			
+			resspec =new ResponseSpecBuilder().expectStatusCode(200).expectContentType(ContentType.JSON).build();
+			if(method.equalsIgnoreCase("POST"))
+			 response =res.when().post(resourceAPI.getresourceApi());
+			else if(method.equalsIgnoreCase("GET"))
+				 response =res.when().get(resourceAPI.getresourceApi());
+			
+	}
+
+	@Then("the API call got success with status code {int}")
+	public void the_API_call_got_success_with_status_code(Integer int1) {
+		
+		assertEquals(response.getStatusCode(), 200);
+
+		System.out.println();
+
+	}
+
+	@Then("{string} in response body is {string}")
+	public void in_response_body_is(String keyValue, String Expectedvalue) {
+		
+
+		assertEquals(getJsonPath(response, keyValue), Expectedvalue);
+	}
+
+
+	
+	@Then("verify place_Id created maps to {string} using {string}")
+	public void verify_place_Id_created_maps_to_using(String expectedName, String resource) throws IOException {
+		//for any new testcase, we have to add res ( request specification)
+	   // requestSpec
+	     place_id=getJsonPath(response,"place_id");
+	     res=RestAssured.given().log().all().spec(RequestSpecification()).queryParam("place_id",place_id);
+	     	user_calls_with_http_request(resource,"GET");
+		  String actualName=getJsonPath(response,"name");
+		  assertEquals(actualName,expectedName);	 
+	    
+	}
+	
+	@Given("DeletePlace Payload")
+public void deleteplace_Payload( ) throws IOException {
+//for any new testcase, we have to add res ( requst specification)
+   res =given().log().all().spec(RequestSpecification()).body(getDeleteAPI(place_id)).log().all();
+ System.out.println( res.get().asString());
+	System.out.println("YOLO");
+}
+	
+	@Then("the API call got success with status code {int} with DeletePlaceAPI")
+	public void the_api_call_got_success_with_status_code_with_delete_place_api(Integer int1) {
+		
+		assertEquals(response.getStatusCode(),200);
+		System.out.println("YOLO1");
+	}
+}
+
